@@ -1,0 +1,22 @@
+# Cabal build output
+dist-newstyle/
+dist/
+
+# Stack build output, if used in the future
+.stack-work/
+
+# Compiled Haskell files
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+
+# Profiling and coverage output
+*.prof
+*.hp
+.hpc/
+
+# Local Cabal configuration
+cabal.project.local
+cabal.project.local.*
+.ghc.environment.*
