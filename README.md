@@ -9,3 +9,5 @@ For the first draft, it needs to be able to:
 
 
 Example of a simple version of the displayed schedule:
+
+<img width="450" height="259" alt="image" src="https://github.com/user-attachments/assets/6f59bc49-c791-4e15-8d12-b036fb36a39a" />
