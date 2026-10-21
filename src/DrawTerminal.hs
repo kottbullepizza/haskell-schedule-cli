@@ -7,7 +7,6 @@ import Timeblock (Timeblock(..))
 
 
 
-
 testblock :: Timeblock
 testblock = Timeblock
     { timeblockId          = 0
@@ -19,8 +18,12 @@ testblock = Timeblock
 
 
 
+-- ENTRY POINTS --
+
 drawSchedule :: IO ()
-drawSchedule = putStrLn assembleSchedule
+drawSchedule = do
+    timeZone <- getCurrentTimeZone -- retrieve the current time zone
+    putStrLn assembleSchedule
 
 {-
 assembleSchedule :: [Timeblock] -> String
@@ -41,11 +44,15 @@ assembleSchedule =
     in intercalate "\n" [header, body, footer]
 
 
-times :: [String]
-times = [show x ++ ".00" | x <- [0..23] :: [Int]]
+
+-- LAYOUT CONSTANTS --
+
+cellWidth :: Int
+cellWidth = 10
 
 boundaries :: [Int]
 boundaries = [0, 30 .. 24 * 60]
+
 
 
 -- HEADER RENDERING --
@@ -74,23 +81,6 @@ renderBoilerplate =
 
     --intercalate ("\n" ++ line ++ "\n") [space ++ x | x <- boundaries]
 
-{-
-renderBlocks :: [Timeblock] -> String
-renderBlocks blocks = ""
--}
-
--- render a single line
-renderTimelineRow :: TimelineRow -> [Timeblock] -> String
-renderTimelineRow
-
--- compares a time unit with a timeblock to see if the block starts at that time
-startsAt :: Int -> Timeblock -> Bool
-
-
-endsAt :: Int -> Timeblock -> Bool
-
-
-
 
 
 -- FOOTER RENDERING (Likely unnecessary) --
@@ -98,6 +88,27 @@ endsAt :: Int -> Timeblock -> Bool
 renderFooter :: String
 renderFooter = line
 
+
+
+-- ROW DRAWING --
+
+renderRow :: [Bool] -> String
+renderRow edges =
+    concat (interleave borderStrings edgeStrings)
+        where
+            edgeStrings   = map fill edges
+            borderStrings = map borderStr (borders edges)
+
+borders :: [Bool] -> [Bool]
+borders edges = zipWith (||) ([False] ++ edges) (edges ++ [False])
+
+borderStr :: Bool -> String
+borderStr True  = "+"
+borderStr False = "|"
+
+fill :: Bool -> String
+fill True  = replicate cellWidth '-'
+fill False = replicate cellWidth ' '
 
 line :: String
 line = "+----------+----------+----------+----------+----------+----------+----------+"
@@ -111,5 +122,35 @@ space = "|          |          |          |          |          |          |    
 
 
 
+-- TIME LOGIC --
+
+rowFlags :: TimeZone -> [Timeblock] -> [Day] -> TimeOfDay -> [Bool]
+rowFlags timeZone blocks days time =
+    map (\day -> cellHasEdge timeZone blocks (LocalTime day time)) days
+-- could also be written as:
+-- rowFlags timeZone blocks days time = [ cellHasEdge timeZone blocks (LocalTime day time) | day <- days ]
+
+cellHasEdge :: TimeZone -> [Timeblock] -> LocalTime -> Bool
+cellHasEdge timeZone blocks time = anyStartsAt || anyEndsAt
+    where
+        anyStartsAt = any (startsAt timeZone time) blocks
+        anyEndsAt   = any (endsAt timeZone time) blocks
+
+startsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
+startsAt timeZone time block =
+    time == utcToLocalTime timeZone (timeblockStart block)
+
+endsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
+endsAt timeZone time block =
+    time == utcToLocalTime timeZone (timeblockEnd block)
+
 strToUtc :: String -> UTCTime
 strToUtc s = parseTimeOrError True defaultTimeLocale "%Y-%m-%d %H:%M:%S" s
+
+
+
+-- LIST HELPERS --
+
+interleave :: [a] -> [a] -> [a]
+interleave []     bs     = bs
+interleave (a:as) bs = a : interleave bs as
