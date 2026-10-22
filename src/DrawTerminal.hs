@@ -53,6 +53,12 @@ cellWidth = 10
 boundaries :: [Int]
 boundaries = [0, 30 .. 24 * 60]
 
+slotMinutes :: Int
+slotMinutes = 30
+
+rowTimes :: [TimeOfDay]
+rowTimes = map minutesToTime [0, slotMinutes .. 24 * 60 - slotMinutes]
+
 
 
 -- HEADER RENDERING --
@@ -83,6 +89,13 @@ renderBoilerplate =
 
 
 
+-- PAGE SECTIONS --
+
+timeLabel :: TimeOfDay -> String
+timeLabel time = "to be continued"
+
+
+
 -- FOOTER RENDERING (Likely unnecessary) --
   
 renderFooter :: String
@@ -91,6 +104,8 @@ renderFooter = line
 
 
 -- ROW DRAWING --
+
+-- RenderWeek
 
 renderRow :: [Bool] -> String
 renderRow edges =
@@ -147,6 +162,10 @@ endsAt timeZone time block =
 strToUtc :: String -> UTCTime
 strToUtc s = parseTimeOrError True defaultTimeLocale "%Y-%m-%d %H:%M:%S" s
 
+minutesToTime :: Int -> TimeOfDay
+minutesToTime minutes = TimeOfDay hours mins 0
+    where
+        (hours, mins) = divMod minutes 60
 
 
 -- LIST HELPERS --
