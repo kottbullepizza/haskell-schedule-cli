@@ -22,25 +22,19 @@ testblock = Timeblock
 
 drawSchedule :: IO ()
 drawSchedule = do
-    timeZone <- getCurrentTimeZone -- retrieve the current time zone
-    putStrLn assembleSchedule
+    timeZone <- getCurrentTimeZone
+    today    <- utctDay <$> getCurrentTime
+    let monday = mondayOfWeek today
+    let week   = [monday .. addDays 6 monday]
+    putStrLn (assembleSchedule timeZone [testblock] week)
 
-{-
-assembleSchedule :: [Timeblock] -> String
-assembleSchedule blocks =
+
+
+assembleSchedule :: TimeZone -> [Timeblock] -> [Day] -> String
+assembleSchedule timeZone blocks days =
     let header = renderHeader
-        body   = renderBlocks blocks
+        body   = renderBody timeZone blocks days
         footer = renderFooter
-    in intercalate "\n" [header, body, footer]
--}
-
-
---assembleSchedule :: [Timeblock] -> String
-assembleSchedule :: String
-assembleSchedule =
-    let header = renderHeader
-        body   = renderBoilerplate
-        footer = line
     in intercalate "\n" [header, body, footer]
 
 
@@ -49,9 +43,6 @@ assembleSchedule =
 
 cellWidth :: Int
 cellWidth = 10
-
-boundaries :: [Int]
-boundaries = [0, 30 .. 24 * 60]
 
 slotMinutes :: Int
 slotMinutes = 30
@@ -66,40 +57,34 @@ rowTimes = map minutesToTime [0, slotMinutes .. 24 * 60 - slotMinutes]
 renderHeader :: String
 renderHeader =
     "   Monday    Tuesday    Wednesday  Thursday    Friday    Saturday    Sunday"
-    ++ "\n" ++ line
+    ++ "\n" ++ lineRow
 
 
 
 -- BODY RENDERING --
 
-renderBoilerplate :: String
-renderBoilerplate =
-    intercalate ("\n" ++ space ++ "\n") [space ++ " " ++ toTime x | x <- boundaries]
-        where
-            toTime t = 
-                (if  length (show (div t 60)) == 2
-                then show (div t 60)
-                else "0" ++ show (div t 60))
-                ++ ":" ++
-                (if  length (show (mod t 60)) == 2
-                then show (mod t 60)
-                else "0" ++ show (mod t 60))
-
-    --intercalate ("\n" ++ line ++ "\n") [space ++ x | x <- boundaries]
+renderBody :: TimeZone -> [Timeblock] -> [Day] -> String
+renderBody timeZone blocks days =
+    intercalate ("\n" ++ spaceRow ++ "\n") timedRows
+    where
+        timedRows = map (renderTimedRow timeZone blocks days) rowTimes
 
 
 
 -- PAGE SECTIONS --
 
+renderTimedRow :: TimeZone -> [Timeblock] -> [Day] -> TimeOfDay -> String
+renderTimedRow timeZone blocks days time = renderRow (rowFlags timeZone blocks days time) ++ " " ++ timeLabel time
+
 timeLabel :: TimeOfDay -> String
-timeLabel time = "to be continued"
+timeLabel time = formatTime defaultTimeLocale "%H:%M" time
 
 
 
 -- FOOTER RENDERING (Likely unnecessary) --
   
 renderFooter :: String
-renderFooter = line
+renderFooter = lineRow
 
 
 
@@ -125,19 +110,20 @@ fill :: Bool -> String
 fill True  = replicate cellWidth '-'
 fill False = replicate cellWidth ' '
 
-line :: String
-line = "+----------+----------+----------+----------+----------+----------+----------+"
--- could also be written as:
--- line = concat (replicate 7 ("+" ++ replicate 10 '-')) ++ "+"
+lineRow :: String
+lineRow = renderRow (replicate 7 True)
 
-space :: String
-space = "|          |          |          |          |          |          |          |"
--- could also be written as:
--- space = concat (replicate 7 ("|" ++ replicate 10 ' ')) ++ "|"
+spaceRow :: String
+spaceRow = renderRow (replicate 7 False)
 
 
 
 -- TIME LOGIC --
+
+mondayOfWeek :: Day -> Day
+mondayOfWeek day = addDays (toInteger (1 - dayEnum)) day
+    where
+        dayEnum = fromEnum (dayOfWeek day)
 
 rowFlags :: TimeZone -> [Timeblock] -> [Day] -> TimeOfDay -> [Bool]
 rowFlags timeZone blocks days time =
