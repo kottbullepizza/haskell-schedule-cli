@@ -1,9 +1,9 @@
-module DrawTerminal (drawSchedule, testblock) where
+module DrawTerminal (drawSchedule, testblock, testblock2) where
 
 import Data.Time
 import Data.List (intercalate)
 
-import Timeblock (Timeblock(..))
+import Timeblock (Timeblock(..), startsAt, endsAt)
 
 
 
@@ -16,6 +16,15 @@ testblock = Timeblock
     , timeblockEnd         = strToUtc "2026-10-19 10:30:00"
     }
 
+testblock2 :: Timeblock
+testblock2 = Timeblock
+    { timeblockId          = 0
+    , timeblockTitle       = "Testblock"
+    , timeblockDescription = "This is a test of a time block"
+    , timeblockStart       = strToUtc "2026-10-21 09:15:00"
+    , timeblockEnd         = strToUtc "2026-10-21 10:45:00"
+    }
+
 
 
 -- ENTRY POINTS --
@@ -26,7 +35,7 @@ drawSchedule = do
     today    <- utctDay <$> getCurrentTime
     let monday = mondayOfWeek today
     let week   = [monday .. addDays 6 monday]
-    putStrLn (assembleSchedule timeZone [testblock] week)
+    putStrLn (assembleSchedule timeZone [testblock, testblock2] week)
 
 
 
@@ -47,8 +56,11 @@ cellWidth = 10
 slotMinutes :: Int
 slotMinutes = 30
 
+rowMinutes :: Int
+rowMinutes = 15
+
 rowTimes :: [TimeOfDay]
-rowTimes = map minutesToTime [0, slotMinutes .. 24 * 60 - slotMinutes]
+rowTimes = map minutesToTime [0, rowMinutes .. 24 * 60 - rowMinutes]
 
 
 
@@ -65,16 +77,20 @@ renderHeader =
 
 renderBody :: TimeZone -> [Timeblock] -> [Day] -> String
 renderBody timeZone blocks days =
-    intercalate ("\n" ++ spaceRow ++ "\n") timedRows
+    intercalate ("\n") bodyRows
     where
-        timedRows = map (renderTimedRow timeZone blocks days) rowTimes
+        bodyRows = map (renderBodyRow timeZone blocks days) rowTimes
 
 
 
 -- PAGE SECTIONS --
 
-renderTimedRow :: TimeZone -> [Timeblock] -> [Day] -> TimeOfDay -> String
-renderTimedRow timeZone blocks days time = renderRow (rowFlags timeZone blocks days time) ++ " " ++ timeLabel time
+renderBodyRow :: TimeZone -> [Timeblock] -> [Day] -> TimeOfDay -> String
+renderBodyRow timeZone blocks days time
+    | mod (todMin time) slotMinutes == 0 = renderOneRow ++ " " ++ timeLabel time
+    | otherwise                          = renderOneRow
+    where
+        renderOneRow = renderRow (rowFlags timeZone blocks days time)
 
 timeLabel :: TimeOfDay -> String
 timeLabel time = formatTime defaultTimeLocale "%H:%M" time
@@ -136,14 +152,6 @@ cellHasEdge timeZone blocks time = anyStartsAt || anyEndsAt
     where
         anyStartsAt = any (startsAt timeZone time) blocks
         anyEndsAt   = any (endsAt timeZone time) blocks
-
-startsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
-startsAt timeZone time block =
-    time == utcToLocalTime timeZone (timeblockStart block)
-
-endsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
-endsAt timeZone time block =
-    time == utcToLocalTime timeZone (timeblockEnd block)
 
 strToUtc :: String -> UTCTime
 strToUtc s = parseTimeOrError True defaultTimeLocale "%Y-%m-%d %H:%M:%S" s

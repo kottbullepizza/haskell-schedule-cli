@@ -1,6 +1,6 @@
 module Main (main) where
 
-import DrawTerminal (drawSchedule, testblock)
+import DrawTerminal (drawSchedule, testblock, testblock2)
 import Timeblock (Timeblock(..))
 
 main :: IO ()

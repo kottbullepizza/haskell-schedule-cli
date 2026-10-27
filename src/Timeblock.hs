@@ -1,8 +1,10 @@
 module Timeblock
     ( Timeblock(..)
+    , startsAt
+    , endsAt
     ) where
 
-import Data.Time (UTCTime)
+import Data.Time
 
 data Timeblock = Timeblock
     { timeblockId          :: Int
@@ -12,3 +14,13 @@ data Timeblock = Timeblock
     , timeblockEnd         :: UTCTime
     }
     deriving (Show, Eq)
+
+-- AN EXQUISITE COMMENT THAT DESCRIBES THE FABULOUS FUNCTIONS BELOW --
+
+startsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
+startsAt timeZone time block =
+    time == utcToLocalTime timeZone (timeblockStart block)
+
+endsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
+endsAt timeZone time block =
+    time == utcToLocalTime timeZone (timeblockEnd block)
