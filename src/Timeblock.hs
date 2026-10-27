@@ -15,6 +15,7 @@ data Timeblock = Timeblock
     }
     deriving (Show, Eq)
 
+
 -- AN EXQUISITE COMMENT THAT DESCRIBES THE FABULOUS FUNCTIONS BELOW --
 
 startsAt :: TimeZone -> LocalTime -> Timeblock -> Bool
