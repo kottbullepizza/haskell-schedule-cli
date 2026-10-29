@@ -106,6 +106,8 @@ renderFooter = lineRow
 
 -- ROW DRAWING --
 
+data Cell = Blank | Edge | Inside | Text String
+
 -- RenderWeek
 
 renderRow :: [Bool] -> String
@@ -122,9 +124,25 @@ borderStr :: Bool -> String
 borderStr True  = "+"
 borderStr False = "|"
 
+-- remove when cell filling is fully implemented
 fill :: Bool -> String
 fill True  = replicate cellWidth '-'
 fill False = replicate cellWidth ' '
+
+-- TODO next: blockCell :: TimeZone -> LocalTime -> Timeblock -> Cell
+
+cfill :: Cell -> String
+cfill Edge       = replicate cellWidth '-'
+cfill Blank      = replicate cellWidth ' '
+cfill Inside     = replicate cellWidth ' '
+cfill (Text str) = centerInWidth cellWidth str
+
+centerInWidth :: Int -> String -> String
+centerInWidth width str = replicate left ' ' ++ (take width str) ++ replicate right ' '
+    where
+        missing = width - length str
+        left    = div missing 2
+        right   = missing - left
 
 lineRow :: String
 lineRow = renderRow (replicate 7 True)
